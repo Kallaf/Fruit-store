@@ -3,7 +3,12 @@ const bodyParser = require('body-parser');
 
 const app = express();
 const port = process.env.PORT || 4000;
-const fruits = require('./fruits');
+
+const MongoClient = require('mongodb').MongoClient;
+const createDatabase = require('./database');
+const dbUrl = "mongodb://localhost:27017/";
+
+createDatabase();
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -17,7 +22,19 @@ app.use((req, res, next) => {
 });
 
 app.get('/fruits', (req, res) => {
-    res.json(fruits);
+    MongoClient.connect(dbUrl, function(err, db) {
+        if (err) 
+        {
+            res.send(err);
+            return;
+        }
+        var dbo = db.db("fruitsDB");
+        dbo.collection("fruits").find({}).toArray(function(err, fruits) {
+          if (err) throw err;
+          res.json(fruits);
+          db.close();
+        });
+      });
 });
 
 app.listen(port, () => {
